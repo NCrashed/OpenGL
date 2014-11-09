@@ -185,6 +185,9 @@ instance TwoDimensionalTextureTarget TextureTargetCubeMap where
       NoProxy -> \t -> error ("No non-proxy target for " ++ show t)
       Proxy -> marshalParameterizedTextureTargetProxy
 
+instance QueryableTextureTarget TextureTargetCubeMap where
+  marshalQueryableTextureTarget = const gl_TEXTURE_CUBE_MAP
+  
 --------------------------------------------------------------------------------
 
 data TextureTargetCubeMapFace =

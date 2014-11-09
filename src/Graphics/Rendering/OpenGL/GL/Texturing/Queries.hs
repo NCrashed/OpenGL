@@ -16,7 +16,8 @@ module Graphics.Rendering.OpenGL.GL.Texturing.Queries (
    TextureQuery, textureInternalFormat, textureSize1D, textureSize2D,
    textureSize3D, textureBorder, textureRGBASizes, textureSharedSize,
    textureIntensitySize, textureLuminanceSize, textureIndexSize,
-   textureDepthBits, textureCompressedImageSize, textureProxyOK
+   textureDepthBits, textureCompressedImageSize, textureProxyOK,
+   textureSize2DCubeMap
 ) where
 
 import Control.Monad
@@ -92,6 +93,13 @@ textureSize2D t level =
              (getTexLevelParameteriNoProxy fromIntegral t level TextureWidth )
              (getTexLevelParameteriNoProxy fromIntegral t level TextureHeight)
 
+textureSize2DCubeMap :: TextureQuery TextureTargetCubeMapFace TextureSize2D
+textureSize2DCubeMap t level =
+   makeGettableStateVar $
+      liftM2 TextureSize2D
+             (getTexLevelParameteriNoProxy fromIntegral t level TextureWidth )
+             (getTexLevelParameteriNoProxy fromIntegral t level TextureHeight)
+             
 textureSize3D :: TextureQuery TextureTarget3D TextureSize3D
 textureSize3D t level =
    makeGettableStateVar $
