@@ -17,9 +17,12 @@ module Graphics.Rendering.OpenGL.GL.QueryObject (
    QueryObject(..), noQueryObject
 ) where
 
-import Foreign.Marshal.Array
+import Control.Monad.IO.Class
+import Data.ObjectName
+import Foreign.Marshal.Array ( allocaArray, peekArray, withArrayLen )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
+import Graphics.Rendering.OpenGL.GL.QueryUtils
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -33,14 +36,17 @@ noQueryObject = QueryObject 0
 --------------------------------------------------------------------------------
 
 instance ObjectName QueryObject where
-   isObjectName = fmap unmarshalGLboolean . glIsQuery . queryID
+   isObjectName = liftIO . fmap unmarshalGLboolean . glIsQuery . queryID
 
    deleteObjectNames queryObjects =
-      withArrayLen (map queryID queryObjects) $
+      liftIO . withArrayLen (map queryID queryObjects) $
          glDeleteQueries . fromIntegral
 
 instance GeneratableObjectName QueryObject where
    genObjectNames n =
-      allocaArray n $ \buf -> do
+      liftIO . allocaArray n $ \buf -> do
         glGenQueries (fromIntegral n) buf
         fmap (map QueryObject) $ peekArray n buf
+
+instance CanBeLabeled QueryObject where
+   objectLabel = objectNameLabel gl_QUERY . queryID

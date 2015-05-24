@@ -20,12 +20,15 @@ module Graphics.Rendering.OpenGL.GL.Shaders.Program (
    programVar1, programVar3
 ) where
 
-import Foreign.Marshal.Alloc
-import Foreign.Ptr
+import Control.Monad.IO.Class
+import Data.ObjectName
+import Data.StateVar
+import Foreign.Marshal.Utils ( with )
+import Foreign.Ptr ( Ptr )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
 import Graphics.Rendering.OpenGL.GL.PeekPoke
-import Graphics.Rendering.OpenGL.GL.StateVar
+import Graphics.Rendering.OpenGL.GL.QueryUtils
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -34,8 +37,11 @@ newtype Program = Program { programID :: GLuint }
    deriving ( Eq, Ord, Show )
 
 instance ObjectName Program where
-   isObjectName = fmap unmarshalGLboolean . glIsProgram . programID
-   deleteObjectName = glDeleteProgram . programID
+   isObjectName = liftIO . fmap unmarshalGLboolean . glIsProgram . programID
+   deleteObjectName = liftIO . glDeleteProgram . programID
+
+instance CanBeLabeled Program where
+   objectLabel = objectNameLabel gl_PROGRAM . programID
 
 --------------------------------------------------------------------------------
 
@@ -63,7 +69,7 @@ data GetProgramPName =
    | TessGenSpacing
    | TessGenVertexOrder
    | TessGenPointMode
-   | ComputeLocalWorkSize  -- 3 integers!
+   | ComputeWorkGroupSize  -- 3 integers!
    | ProgramSeparable
    | ProgramBinaryRetrievableHint
    | ActiveAtomicCounterBuffers
@@ -94,7 +100,7 @@ marshalGetProgramPName x = case x of
    TessGenSpacing -> gl_TESS_GEN_SPACING
    TessGenVertexOrder -> gl_TESS_GEN_VERTEX_ORDER
    TessGenPointMode -> gl_TESS_GEN_POINT_MODE
-   ComputeLocalWorkSize -> gl_COMPUTE_LOCAL_WORK_SIZE
+   ComputeWorkGroupSize ->  gl_COMPUTE_WORK_GROUP_SIZE
    ProgramSeparable -> gl_PROGRAM_SEPARABLE
    ProgramBinaryRetrievableHint -> gl_PROGRAM_BINARY_RETRIEVABLE_HINT
    ActiveAtomicCounterBuffers -> gl_ACTIVE_ATOMIC_COUNTER_BUFFERS
@@ -109,6 +115,6 @@ programVar3 = programVarN . peek3
 programVarN :: (Ptr GLint -> IO a) -> GetProgramPName -> Program -> GettableStateVar a
 programVarN f p program =
    makeGettableStateVar $
-      alloca $ \buf -> do
+      with 0 $ \buf -> do
          glGetProgramiv (programID program) (marshalGetProgramPName p) buf
          f buf

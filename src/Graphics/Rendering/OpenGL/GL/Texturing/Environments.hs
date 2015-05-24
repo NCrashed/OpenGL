@@ -22,13 +22,13 @@ module Graphics.Rendering.OpenGL.GL.Texturing.Environments (
 ) where
 
 import Control.Monad
+import Data.StateVar
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
 import Graphics.Rendering.OpenGL.GL.BlendingFactor
 import Graphics.Rendering.OpenGL.GL.PeekPoke
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.Parameters
 import Graphics.Rendering.OpenGL.GL.Texturing.TextureUnit
 import Graphics.Rendering.OpenGL.GL.VertexSpec
@@ -83,19 +83,19 @@ marshalTextureEnvParameter x = case x of
    TexEnvParamSrc0RGB -> gl_SRC0_RGB
    TexEnvParamSrc1RGB -> gl_SRC1_RGB
    TexEnvParamSrc2RGB -> gl_SRC2_RGB
-   TexEnvParamSrc3RGB -> gl_SOURCE3_RGB
+   TexEnvParamSrc3RGB -> gl_SOURCE3_RGB_NV
    TexEnvParamSrc0Alpha -> gl_SRC0_ALPHA
    TexEnvParamSrc1Alpha -> gl_SRC1_ALPHA
    TexEnvParamSrc2Alpha -> gl_SRC2_ALPHA
-   TexEnvParamSrc3Alpha -> gl_SOURCE3_ALPHA
+   TexEnvParamSrc3Alpha -> gl_SOURCE3_ALPHA_NV
    TexEnvParamOperand0RGB -> gl_OPERAND0_RGB
    TexEnvParamOperand1RGB -> gl_OPERAND1_RGB
    TexEnvParamOperand2RGB -> gl_OPERAND2_RGB
-   TexEnvParamOperand3RGB -> gl_OPERAND3_RGB
+   TexEnvParamOperand3RGB -> gl_OPERAND3_RGB_NV
    TexEnvParamOperand0Alpha -> gl_OPERAND0_ALPHA
    TexEnvParamOperand1Alpha -> gl_OPERAND1_ALPHA
    TexEnvParamOperand2Alpha -> gl_OPERAND2_ALPHA
-   TexEnvParamOperand3Alpha -> gl_OPERAND3_ALPHA
+   TexEnvParamOperand3Alpha -> gl_OPERAND3_ALPHA_NV
    TexEnvParamRGBScale -> gl_RGB_SCALE
    TexEnvParamAlphaScale -> gl_ALPHA_SCALE
    TexEnvParamLODBias -> gl_TEXTURE_LOD_BIAS
@@ -172,7 +172,7 @@ marshalTextureFunction x = fromIntegral $ case x of
    Replace -> gl_REPLACE
    AddUnsigned -> gl_ADD
    Combine -> gl_COMBINE
-   Combine4 -> gl_COMBINE4
+   Combine4 -> gl_COMBINE4_NV
 
 unmarshalTextureFunction :: GLint -> TextureFunction
 unmarshalTextureFunction x
@@ -182,7 +182,7 @@ unmarshalTextureFunction x
    | y == gl_REPLACE = Replace
    | y == gl_ADD = AddUnsigned
    | y == gl_COMBINE = Combine
-   | y == gl_COMBINE4 = Combine4
+   | y == gl_COMBINE4_NV = Combine4
    | otherwise = error ("unmarshalTextureFunction: illegal value " ++ show x)
    where y = fromIntegral x
 
@@ -320,7 +320,8 @@ argAlpha n = arg (argNumToOperandAlpha n) (argNumToSrcAlpha n)
 
 arg :: TextureEnvParameter -> TextureEnvParameter -> StateVar Arg
 arg op src = combineArg (textureEnvOperand op) (textureEnvSrc src)
-   where combineArg v w = makeStateVar
+   where combineArg :: StateVar BlendingFactor -> StateVar Src -> StateVar Arg
+         combineArg v w = makeStateVar
                              (liftM2 Arg (get v) (get w))
                              (\(Arg x y) -> do v $= x; w $= y)
 

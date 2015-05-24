@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects
@@ -22,10 +21,14 @@ module Graphics.Rendering.OpenGL.GL.Shaders.ShaderObjects (
 
    -- * Shader Queries
    shaderType, shaderDeleteStatus, compileStatus, shaderInfoLog,
-   PrecisionType, shaderPrecisionFormat
+   PrecisionType, shaderPrecisionFormat,
+
+   -- * Bytestring utilities
+   packUtf8, unpackUtf8
 ) where
 
 import Control.Monad
+import Data.StateVar
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils
@@ -35,7 +38,6 @@ import Graphics.Rendering.OpenGL.GL.GLboolean
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.QueryUtils
 import Graphics.Rendering.OpenGL.GL.Shaders.Shader
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -99,7 +101,7 @@ setShaderSource shader src =
          with srcLength $ \srcLengthBuf ->
             glShaderSource (shaderID shader) 1 srcPtrBuf srcLengthBuf
 
-{-# DEPRECATED shaderSource "Use 'shaderSourceBS' instead." #-}
+{-# DEPRECATED shaderSource "Use a combination of 'shaderSourceBS' and 'packUtf8' or 'unpackUtf8' instead." #-}
 shaderSource :: Shader -> StateVar [String]
 shaderSource shader =
    makeStateVar
@@ -154,7 +156,7 @@ marshalGetShaderPName x = case x of
 shaderVar :: (GLint -> a) -> GetShaderPName -> Shader -> GettableStateVar a
 shaderVar f p shader =
    makeGettableStateVar $
-      alloca $ \buf -> do
+      with 0 $ \buf -> do
          glGetShaderiv (shaderID shader) (marshalGetShaderPName p) buf
          peek1 f buf
 

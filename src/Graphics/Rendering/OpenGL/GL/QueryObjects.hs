@@ -30,7 +30,9 @@ module Graphics.Rendering.OpenGL.GL.QueryObjects (
    timestampQuery, timestamp
 ) where
 
+import Data.StateVar
 import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
 import Graphics.Rendering.OpenGL.GL.Exception
@@ -38,7 +40,6 @@ import Graphics.Rendering.OpenGL.GL.GLboolean
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.QueryObject
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -111,7 +112,7 @@ queryCounterBits = getQueryi fromIntegral QueryCounterBits
 getQueryi :: (GLint -> a) -> GetQueryPName -> QueryTarget -> GettableStateVar a
 getQueryi f p t =
    makeGettableStateVar $
-      alloca $ \buf -> do
+      with 0 $ \buf -> do
          getQueryiv' t p buf
          peek1 f buf
 

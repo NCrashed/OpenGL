@@ -17,25 +17,32 @@ module Graphics.Rendering.OpenGL.GL.FramebufferObjects.FramebufferObject (
    FramebufferObject(..)
 ) where
 
-import Foreign.Marshal
+import Control.Monad.IO.Class
+import Data.ObjectName
+import Foreign.Marshal.Array ( allocaArray, peekArray, withArrayLen )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
+import Graphics.Rendering.OpenGL.GL.QueryUtils
 import Graphics.Rendering.OpenGL.Raw
        
 --------------------------------------------------------------------------------
 
-data FramebufferObject = FramebufferObject { framebufferID :: GLuint }
+newtype FramebufferObject = FramebufferObject { framebufferID :: GLuint }
    deriving ( Eq, Ord, Show )
 
 instance ObjectName FramebufferObject where
-    isObjectName = fmap unmarshalGLboolean . glIsFramebuffer . framebufferID
+    isObjectName =
+      liftIO . fmap unmarshalGLboolean . glIsFramebuffer . framebufferID
 
     deleteObjectNames objs =
-       withArrayLen (map framebufferID objs) $
+       liftIO . withArrayLen (map framebufferID objs) $
           glDeleteFramebuffers . fromIntegral
 
 instance GeneratableObjectName FramebufferObject where
     genObjectNames n =
-       allocaArray n $ \buf -> do
+       liftIO . allocaArray n $ \buf -> do
           glGenFramebuffers (fromIntegral n) buf
           fmap (map FramebufferObject) $ peekArray n buf
+
+instance CanBeLabeled FramebufferObject where
+   objectLabel = objectNameLabel gl_FRAMEBUFFER . framebufferID

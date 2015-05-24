@@ -35,15 +35,14 @@ module Graphics.Rendering.OpenGL.GL.VertexArrays (
    vertexAttribPointer, vertexAttribArray,
 ) where
 
-import Foreign.Marshal.Alloc
-import Foreign.Ptr
-import Foreign.Storable
+import Data.StateVar
+import Foreign.Ptr ( Ptr, nullPtr )
 import Graphics.Rendering.OpenGL.GL.Capability
 import Graphics.Rendering.OpenGL.GL.DataType
 import Graphics.Rendering.OpenGL.GL.GLboolean
 import Graphics.Rendering.OpenGL.GL.PrimitiveMode
+import Graphics.Rendering.OpenGL.GL.PrimitiveModeInternal
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.TextureUnit
 import Graphics.Rendering.OpenGL.GL.VertexSpec
 import Graphics.Rendering.OpenGL.GLU.ErrorsInternal
@@ -86,7 +85,7 @@ marshalClientArrayType x = case x of
    EdgeFlagArray -> gl_EDGE_FLAG_ARRAY
    FogCoordArray -> gl_FOG_COORD_ARRAY
    SecondaryColorArray -> gl_SECONDARY_COLOR_ARRAY
-   MatrixIndexArray -> gl_MATRIX_INDEX_ARRAY
+   MatrixIndexArray -> gl_MATRIX_INDEX_ARRAY_ARB
 
 -- Hmmm...
 clientArrayTypeToEnableCap :: ClientArrayType -> EnableCap
@@ -372,7 +371,7 @@ getLockArrays = do
       else return Nothing
 
 setLockArrays :: Maybe (ArrayIndex, NumArrayIndices) -> IO ()
-setLockArrays = maybe glUnlockArrays (uncurry glLockArrays)
+setLockArrays = maybe glUnlockArraysEXT (uncurry glLockArraysEXT)
 
 --------------------------------------------------------------------------------
 
@@ -403,44 +402,6 @@ setPrimitiveRestartIndexNV maybeIdx = case maybeIdx of
    Nothing  -> glDisableClientState gl_PRIMITIVE_RESTART_NV
    Just idx -> do glEnableClientState gl_PRIMITIVE_RESTART_NV
                   glPrimitiveRestartIndexNV (fromIntegral idx)
-
---------------------------------------------------------------------------------
-
-data GetPointervPName =
-     VertexArrayPointer
-   | NormalArrayPointer
-   | ColorArrayPointer
-   | IndexArrayPointer
-   | TextureCoordArrayPointer
-   | EdgeFlagArrayPointer
-   | FogCoordArrayPointer
-   | SecondaryColorArrayPointer
-   | FeedbackBufferPointer
-   | SelectionBufferPointer
-   | WeightArrayPointer
-   | MatrixIndexArrayPointer
-
-marshalGetPointervPName :: GetPointervPName -> GLenum
-marshalGetPointervPName x = case x of
-   VertexArrayPointer -> gl_VERTEX_ARRAY_POINTER
-   NormalArrayPointer -> gl_NORMAL_ARRAY_POINTER
-   ColorArrayPointer -> gl_COLOR_ARRAY_POINTER
-   IndexArrayPointer -> gl_INDEX_ARRAY_POINTER
-   TextureCoordArrayPointer -> gl_TEXTURE_COORD_ARRAY_POINTER
-   EdgeFlagArrayPointer -> gl_EDGE_FLAG_ARRAY_POINTER
-   FogCoordArrayPointer -> gl_FOG_COORD_ARRAY_POINTER
-   SecondaryColorArrayPointer -> gl_SECONDARY_COLOR_ARRAY_POINTER
-   FeedbackBufferPointer -> gl_FEEDBACK_BUFFER_POINTER
-   SelectionBufferPointer -> gl_SELECTION_BUFFER_POINTER
-   WeightArrayPointer -> gl_WEIGHT_ARRAY_POINTER
-   MatrixIndexArrayPointer -> gl_MATRIX_INDEX_ARRAY_POINTER
-
---------------------------------------------------------------------------------
-
-getPointer :: GetPointervPName -> IO (Ptr a)
-getPointer n = alloca $ \buf -> do
-   glGetPointerv (marshalGetPointervPName n) buf
-   peek buf
 
 --------------------------------------------------------------------------------
 

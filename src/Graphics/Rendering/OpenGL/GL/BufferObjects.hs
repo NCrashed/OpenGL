@@ -41,17 +41,18 @@ module Graphics.Rendering.OpenGL.GL.BufferObjects (
    indexedBufferStart, indexedBufferSize
 ) where
 
-import Data.Maybe
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
-import Foreign.Ptr
-import Foreign.Storable
+import Control.Monad.IO.Class
+import Data.Maybe ( fromMaybe )
+import Data.ObjectName
+import Data.StateVar
+import Foreign.Marshal.Array ( allocaArray, peekArray, withArrayLen )
+import Foreign.Marshal.Utils ( with )
+import Foreign.Ptr ( Ptr, nullPtr )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.Exception
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.VertexArrays
 import Graphics.Rendering.OpenGL.GLU.ErrorsInternal
 import Graphics.Rendering.OpenGL.Raw
@@ -64,17 +65,20 @@ newtype BufferObject = BufferObject { bufferID :: GLuint }
 --------------------------------------------------------------------------------
 
 instance ObjectName BufferObject where
-   isObjectName = fmap unmarshalGLboolean . glIsBuffer . bufferID
+   isObjectName = liftIO . fmap unmarshalGLboolean . glIsBuffer . bufferID
 
    deleteObjectNames bufferObjects =
-      withArrayLen (map bufferID bufferObjects) $
+      liftIO . withArrayLen (map bufferID bufferObjects) $
          glDeleteBuffers . fromIntegral
 
 instance GeneratableObjectName BufferObject where
    genObjectNames n =
-      allocaArray n $ \buf -> do
+      liftIO . allocaArray n $ \buf -> do
         glGenBuffers (fromIntegral n) buf
         fmap (map BufferObject) $ peekArray n buf
+
+instance CanBeLabeled BufferObject where
+   objectLabel = objectNameLabel gl_BUFFER . bufferID
 
 --------------------------------------------------------------------------------
 
@@ -278,7 +282,7 @@ marshalGetBufferPName x = case x of
    GetBufferMapped -> gl_BUFFER_MAPPED
 
 getBufferParameter :: BufferTarget -> (GLenum -> a) -> GetBufferPName -> IO a
-getBufferParameter t f p = alloca $ \buf -> do
+getBufferParameter t f p = with 0 $ \buf -> do
    glGetBufferParameteriv (marshalBufferTarget t)
                           (marshalGetBufferPName p) buf
    peek1 (f . fromIntegral) buf
@@ -286,9 +290,9 @@ getBufferParameter t f p = alloca $ \buf -> do
 --------------------------------------------------------------------------------
 
 getBufferPointer :: BufferTarget -> IO (Ptr a)
-getBufferPointer t = alloca $ \buf -> do
+getBufferPointer t = with nullPtr $ \buf -> do
    glGetBufferPointerv (marshalBufferTarget t) gl_BUFFER_MAP_POINTER buf
-   peek buf
+   peek1 id buf
 
 --------------------------------------------------------------------------------
 

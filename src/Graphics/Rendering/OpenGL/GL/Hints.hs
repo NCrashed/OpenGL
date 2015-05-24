@@ -16,8 +16,8 @@ module Graphics.Rendering.OpenGL.GL.Hints (
    HintTarget(..), HintMode(..), hint
 ) where
 
+import Data.StateVar
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -43,8 +43,8 @@ marshalHintTarget x = case x of
    Fog -> gl_FOG_HINT
    GenerateMipmap -> gl_GENERATE_MIPMAP_HINT
    TextureCompression -> gl_TEXTURE_COMPRESSION_HINT
-   PackCMYK -> gl_PACK_CMYK_HINT
-   UnpackCMYK -> gl_UNPACK_CMYK_HINT
+   PackCMYK -> gl_PACK_CMYK_HINT_EXT
+   UnpackCMYK -> gl_UNPACK_CMYK_HINT_EXT
 
 hintTargetToGetPName :: HintTarget -> PName1I
 hintTargetToGetPName x = case x of

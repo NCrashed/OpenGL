@@ -17,13 +17,14 @@ module Graphics.Rendering.OpenGL.GL (
    -- * OpenGL Fundamentals
    module Graphics.Rendering.OpenGL.Raw.Types,
    module Graphics.Rendering.OpenGL.GL.FlushFinish,
-   module Graphics.Rendering.OpenGL.GL.ObjectName,
+   module Data.ObjectName,
 
    -- * Event Model
    module Graphics.Rendering.OpenGL.GL.SyncObjects,
    module Graphics.Rendering.OpenGL.GL.QueryObjects,
 
    -- * Vertex Specification and Drawing Commands
+   module Graphics.Rendering.OpenGL.GL.PrimitiveMode,
    module Graphics.Rendering.OpenGL.GL.BeginEnd,
    module Graphics.Rendering.OpenGL.GL.Rectangles,
    module Graphics.Rendering.OpenGL.GL.ConditionalRendering,
@@ -64,9 +65,10 @@ module Graphics.Rendering.OpenGL.GL (
    module Graphics.Rendering.OpenGL.GL.Hints,
    module Graphics.Rendering.OpenGL.GL.PixellikeObject,
    module Graphics.Rendering.OpenGL.GL.TransformFeedback,
+   module Graphics.Rendering.OpenGL.GL.DebugOutput,
 
    -- * State and State Requests
-   module Graphics.Rendering.OpenGL.GL.StateVar,
+   module Data.StateVar,
    module Graphics.Rendering.OpenGL.GL.Tensor,
    module Graphics.Rendering.OpenGL.GL.StringQueries,
    module Graphics.Rendering.OpenGL.GL.SavingState
@@ -74,11 +76,13 @@ module Graphics.Rendering.OpenGL.GL (
 
 import Graphics.Rendering.OpenGL.Raw.Types
 import Graphics.Rendering.OpenGL.GL.FlushFinish
-import Graphics.Rendering.OpenGL.GL.ObjectName
+import Data.ObjectName
+import Data.StateVar
 
 import Graphics.Rendering.OpenGL.GL.SyncObjects
 import Graphics.Rendering.OpenGL.GL.QueryObjects
 
+import Graphics.Rendering.OpenGL.GL.PrimitiveMode
 import Graphics.Rendering.OpenGL.GL.BeginEnd
 import Graphics.Rendering.OpenGL.GL.Rectangles
 import Graphics.Rendering.OpenGL.GL.ConditionalRendering
@@ -115,8 +119,8 @@ import Graphics.Rendering.OpenGL.GL.DisplayLists
 import Graphics.Rendering.OpenGL.GL.Hints
 import Graphics.Rendering.OpenGL.GL.PixellikeObject
 import Graphics.Rendering.OpenGL.GL.TransformFeedback
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Tensor
 import Graphics.Rendering.OpenGL.GL.StringQueries
 import Graphics.Rendering.OpenGL.GL.SavingState

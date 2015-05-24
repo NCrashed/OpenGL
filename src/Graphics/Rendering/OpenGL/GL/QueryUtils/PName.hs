@@ -28,13 +28,16 @@ module Graphics.Rendering.OpenGL.GL.QueryUtils.PName (
     GetPNameMatrix(..),
     PNameMatrix(..),
 
-    clipPlaneIndexToEnum
+    clipPlaneIndexToEnum,
+
+    GetPointervPName(..), getPointer
 ) where
 
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
-import Foreign.Ptr
-import Foreign.Storable
+import Foreign.Marshal.Alloc ( alloca )
+import Foreign.Marshal.Array ( allocaArray, peekArray )
+import Foreign.Marshal.Utils ( with )
+import Foreign.Ptr ( Ptr, nullPtr, castPtr )
+import Foreign.Storable ( Storable(peek) )
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GLU.ErrorsInternal
 import Graphics.Rendering.OpenGL.Raw
@@ -366,6 +369,10 @@ data PName1I
     | GetMaxFragmentUniformComponents   -- ^ sizei
     | GetMaxVertexAttribs               -- ^ sizei
     | GetMaxVaryingFloats               -- ^ sizei
+    -- tessellation
+    | GetPatchVertices                  -- ^ sizei
+    | GetMaxPatchVertices               -- ^ sizei
+    | GetMaxTessGenLevel                -- ^ sizei
     -- coordtrans
     | GetMatrixMode                 -- ^ enum
     | GetModelviewStackDepth        -- ^ sizei
@@ -549,6 +556,13 @@ data PName1I
     | GetShaderCompiler             -- ^ bool
     | GetNumShaderBinaryFormats     -- ^ int
     | GetNumProgramBinaryFormats    -- ^ int
+    -- Debug Output
+    | GetMaxDebugMessageLength        -- ^ int
+    | GetMaxDebugLoggedMessages       -- ^ int
+    | GetDebugLoggedMessages          -- ^ int
+    | GetDebugNextLoggedMessageLength -- ^ int
+    | GetMaxDebugGroupStackDepth      -- ^ int
+    | GetMaxLabelLength               -- ^ int
 
 instance GetPName1I PName1I where
 
@@ -579,8 +593,8 @@ instance GetPName PName1I where
         GetFogHint -> Just gl_FOG_HINT
         GetGenerateMipmapHint -> Just gl_GENERATE_MIPMAP_HINT
         GetTextureCompressionHint -> Just gl_TEXTURE_COMPRESSION_HINT
-        GetPackCMYKHint -> Just gl_PACK_CMYK_HINT
-        GetUnpackCMYKHint -> Just gl_UNPACK_CMYK_HINT
+        GetPackCMYKHint -> Just gl_PACK_CMYK_HINT_EXT
+        GetUnpackCMYKHint -> Just gl_UNPACK_CMYK_HINT_EXT
         GetVertexArrayBinding -> Just gl_VERTEX_ARRAY_BINDING
         -- Selection ?
         GetMaxNameStackDepth -> Just gl_MAX_NAME_STACK_DEPTH
@@ -625,6 +639,10 @@ instance GetPName PName1I where
         GetMaxFragmentUniformComponents -> Just gl_MAX_FRAGMENT_UNIFORM_COMPONENTS
         GetMaxVaryingFloats -> Just gl_MAX_VARYING_COMPONENTS
         GetMaxVertexAttribs -> Just gl_MAX_VERTEX_ATTRIBS
+        -- tessellation
+        GetPatchVertices -> Just gl_PATCH_VERTICES
+        GetMaxPatchVertices -> Just gl_MAX_PATCH_VERTICES
+        GetMaxTessGenLevel -> Just gl_MAX_TESS_GEN_LEVEL
         -- coordtrans
         GetMatrixMode -> Just gl_MATRIX_MODE
         GetModelviewStackDepth -> Just gl_MODELVIEW_STACK_DEPTH
@@ -635,8 +653,8 @@ instance GetPName PName1I where
         GetMaxProjectionStackDepth -> Just gl_MAX_PROJECTION_STACK_DEPTH
         GetMaxTextureStackDepth -> Just gl_MAX_TEXTURE_STACK_DEPTH
         GetMaxColorMatrixStackDepth -> Just gl_MAX_COLOR_MATRIX_STACK_DEPTH
-        GetMaxMatrixPaletteStackDepth -> Just gl_MAX_MATRIX_PALETTE_STACK_DEPTH
-        GetCurrentMatrixStackDepth -> Just gl_CURRENT_MATRIX_STACK_DEPTH
+        GetMaxMatrixPaletteStackDepth -> Just gl_MAX_MATRIX_PALETTE_STACK_DEPTH_ARB
+        GetCurrentMatrixStackDepth -> Just gl_CURRENT_MATRIX_STACK_DEPTH_ARB
         GetActiveTexture -> Just gl_ACTIVE_TEXTURE
         -- vertexarrays
         GetVertexArraySize -> Just gl_VERTEX_ARRAY_SIZE
@@ -658,8 +676,8 @@ instance GetPName PName1I where
         GetSecondaryColorArraySize -> Just gl_SECONDARY_COLOR_ARRAY_SIZE
         GetSecondaryColorArrayType -> Just gl_SECONDARY_COLOR_ARRAY_TYPE
         GetSecondaryColorArrayStride -> Just gl_SECONDARY_COLOR_ARRAY_STRIDE
-        GetArrayElementLockCount -> Just gl_ARRAY_ELEMENT_LOCK_COUNT
-        GetArrayElementLockFirst -> Just gl_ARRAY_ELEMENT_LOCK_FIRST
+        GetArrayElementLockCount -> Just gl_ARRAY_ELEMENT_LOCK_COUNT_EXT
+        GetArrayElementLockFirst -> Just gl_ARRAY_ELEMENT_LOCK_FIRST_EXT
         GetClientActiveTexture -> Just gl_CLIENT_ACTIVE_TEXTURE
         GetMaxElementsVertices -> Just gl_MAX_ELEMENTS_VERTICES
         GetMaxElementsIndices -> Just gl_MAX_ELEMENTS_INDICES
@@ -710,7 +728,7 @@ instance GetPName PName1I where
         GetFogMode -> Just gl_FOG_MODE
         GetFogIndex -> Just gl_FOG_INDEX
         GetFogCoordSrc -> Just gl_FOG_COORD_SRC
-        GetFogDistanceMode -> Just gl_FOG_DISTANCE_MODE
+        GetFogDistanceMode -> Just gl_FOG_DISTANCE_MODE_NV
         -- Framebuffer
         GetAuxBuffers -> Just gl_AUX_BUFFERS
         GetDoublebuffer -> Just gl_DOUBLEBUFFER
@@ -753,7 +771,7 @@ instance GetPName PName1I where
         GetStencilFail -> Just gl_STENCIL_FAIL
         GetStencilPassDepthFail -> Just gl_STENCIL_PASS_DEPTH_FAIL
         GetStencilPassDepthPass -> Just gl_STENCIL_PASS_DEPTH_PASS
-        GetActiveStencilFace -> Just gl_ACTIVE_STENCIL_FACE
+        GetActiveStencilFace -> Just gl_ACTIVE_STENCIL_FACE_EXT
         GetLogicOpMode -> Just gl_LOGIC_OP_MODE
         GetBlendDst -> Just gl_BLEND_DST
         GetBlendSrc -> Just gl_BLEND_SRC
@@ -809,6 +827,13 @@ instance GetPName PName1I where
         GetShaderCompiler -> Just gl_SHADER_COMPILER
         GetNumShaderBinaryFormats -> Just gl_NUM_SHADER_BINARY_FORMATS
         GetNumProgramBinaryFormats -> Just gl_NUM_PROGRAM_BINARY_FORMATS
+        -- Debug Output
+        GetMaxDebugMessageLength -> Just gl_MAX_DEBUG_MESSAGE_LENGTH
+        GetMaxDebugLoggedMessages -> Just gl_MAX_DEBUG_LOGGED_MESSAGES
+        GetDebugLoggedMessages -> Just gl_DEBUG_LOGGED_MESSAGES
+        GetDebugNextLoggedMessageLength -> Just gl_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH
+        GetMaxDebugGroupStackDepth -> Just gl_MAX_DEBUG_GROUP_STACK_DEPTH
+        GetMaxLabelLength -> Just gl_MAX_LABEL_LENGTH
 
 -- 0x8825 through 0x8834 are reserved for draw buffers
 
@@ -895,8 +920,8 @@ instance GetPName PName1F where
         GetZoomX -> Just gl_ZOOM_X
         GetZoomY -> Just gl_ZOOM_Y
         -- Colors
-        GetMaxShininess -> Just gl_MAX_SHININESS
-        GetMaxSpotExponent -> Just gl_MAX_SPOT_EXPONENT
+        GetMaxShininess -> Just gl_MAX_SHININESS_NV
+        GetMaxSpotExponent -> Just gl_MAX_SPOT_EXPONENT_NV
         -- Fog
         GetFogStart -> Just gl_FOG_START
         GetFogEnd -> Just gl_FOG_END
@@ -949,7 +974,7 @@ instance GetPName PName1F where
         GetPolygonOffsetFactor -> Just gl_POLYGON_OFFSET_FACTOR
         GetPolygonOffsetUnits -> Just gl_POLYGON_OFFSET_UNITS
         -- Texture parameters
-        GetMaxTextureMaxAnisotropy -> Just gl_MAX_TEXTURE_MAX_ANISOTROPY
+        GetMaxTextureMaxAnisotropy -> Just gl_MAX_TEXTURE_MAX_ANISOTROPY_EXT
         GetMaxTextureLODBias -> Just gl_MAX_TEXTURE_LOD_BIAS
 
 -----------------------------------------------------------------------------
@@ -1037,7 +1062,7 @@ instance GetPName PName2F where
         GetAliasedLineWidthRange -> Just gl_ALIASED_LINE_WIDTH_RANGE
         GetSmoothLineWidthRange -> Just gl_SMOOTH_LINE_WIDTH_RANGE
         -- PerFragment
-        GetDepthBounds -> Just gl_DEPTH_BOUNDS
+        GetDepthBounds -> Just gl_DEPTH_BOUNDS_EXT
 
 -----------------------------------------------------------------------------
 
@@ -1072,7 +1097,7 @@ instance GetPName PName4I where
         -- coordtrans
         GetViewport -> Just gl_VIEWPORT
         -- Framebuffer
-        GetRGBASignedComponents -> Just gl_RGBA_SIGNED_COMPONENTS
+        GetRGBASignedComponents -> Just gl_RGBA_SIGNED_COMPONENTS_EXT
         -- PerFragement
         GetScissorBox -> Just gl_SCISSOR_BOX
 
@@ -1180,4 +1205,50 @@ instance GetPName PNameMatrix where
         GetProjectionMatrix -> Just gl_PROJECTION_MATRIX
         GetTextureMatrix -> Just gl_TEXTURE_MATRIX
         GetColorMatrix -> Just gl_COLOR_MATRIX
-        GetMatrixPalette -> Just gl_MATRIX_PALETTE
+        GetMatrixPalette -> Just gl_MATRIX_PALETTE_ARB
+
+--------------------------------------------------------------------------------
+
+data GetPointervPName =
+   -- core profile
+     DebugCallbackFunction
+   | DebugCallbackUserParam
+   -- compatibility profile
+   | SelectionBufferPointer
+   | FeedbackBufferPointer
+   | VertexArrayPointer
+   | NormalArrayPointer
+   | ColorArrayPointer
+   | SecondaryColorArrayPointer
+   | IndexArrayPointer
+   | TextureCoordArrayPointer
+   | FogCoordArrayPointer
+   | EdgeFlagArrayPointer
+   -- GL_ARB_vertex_blend
+   | WeightArrayPointer
+   -- GL_ARB_matrix_palette
+   | MatrixIndexArrayPointer
+
+marshalGetPointervPName :: GetPointervPName -> GLenum
+marshalGetPointervPName x = case x of
+   DebugCallbackFunction -> gl_DEBUG_CALLBACK_FUNCTION
+   DebugCallbackUserParam -> gl_DEBUG_CALLBACK_USER_PARAM
+   SelectionBufferPointer -> gl_SELECTION_BUFFER_POINTER
+   FeedbackBufferPointer -> gl_FEEDBACK_BUFFER_POINTER
+   VertexArrayPointer -> gl_VERTEX_ARRAY_POINTER
+   NormalArrayPointer -> gl_NORMAL_ARRAY_POINTER
+   ColorArrayPointer -> gl_COLOR_ARRAY_POINTER
+   SecondaryColorArrayPointer -> gl_SECONDARY_COLOR_ARRAY_POINTER
+   IndexArrayPointer -> gl_INDEX_ARRAY_POINTER
+   TextureCoordArrayPointer -> gl_TEXTURE_COORD_ARRAY_POINTER
+   FogCoordArrayPointer -> gl_FOG_COORD_ARRAY_POINTER
+   EdgeFlagArrayPointer -> gl_EDGE_FLAG_ARRAY_POINTER
+   WeightArrayPointer -> gl_WEIGHT_ARRAY_POINTER_ARB
+   MatrixIndexArrayPointer -> gl_MATRIX_INDEX_ARRAY_POINTER_ARB
+
+--------------------------------------------------------------------------------
+
+getPointer :: GetPointervPName -> IO (Ptr a)
+getPointer n = with nullPtr $ \buf -> do
+   glGetPointerv (marshalGetPointervPName n) buf
+   peek buf

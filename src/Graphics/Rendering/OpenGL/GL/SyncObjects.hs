@@ -25,13 +25,15 @@ module Graphics.Rendering.OpenGL.GL.SyncObjects (
    SyncStatus(..), syncStatus
 ) where
 
-import Foreign.Marshal.Alloc
-import Foreign.Ptr
+import Control.Monad.IO.Class
+import Data.ObjectName
+import Data.StateVar
+import Foreign.Marshal.Utils ( with )
+import Foreign.Ptr ( nullPtr )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.Raw
 
 --------------------------------------------------------------------------------
@@ -40,8 +42,11 @@ newtype SyncObject = SyncObject { syncID :: GLsync }
    deriving ( Eq, Ord, Show )
 
 instance ObjectName SyncObject where
-   isObjectName = fmap unmarshalGLboolean . glIsSync . syncID
-   deleteObjectName = glDeleteSync . syncID
+   isObjectName = liftIO . fmap unmarshalGLboolean . glIsSync . syncID
+   deleteObjectName = liftIO . glDeleteSync . syncID
+
+instance CanBeLabeled SyncObject where
+   objectLabel = objectPtrLabel . syncID
 
 syncGpuCommandsComplete :: IO SyncObject
 syncGpuCommandsComplete =
@@ -108,6 +113,6 @@ unmarshalSyncStatus x
 syncStatus :: SyncObject -> GettableStateVar SyncStatus
 syncStatus syncObject =
    makeGettableStateVar $
-      alloca $ \buf -> do
+      with 0 $ \buf -> do
          glGetSynciv (syncID syncObject) gl_SYNC_STATUS 1 nullPtr buf
          peek1 (unmarshalSyncStatus . fromIntegral) buf

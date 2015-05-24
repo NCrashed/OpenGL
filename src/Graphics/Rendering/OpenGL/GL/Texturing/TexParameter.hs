@@ -17,12 +17,12 @@ module Graphics.Rendering.OpenGL.GL.Texturing.TexParameter (
    TexParameter(..), texParami, texParamf, texParamC4f, getTexParameteri
 ) where
 
+import Data.StateVar
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
 import Graphics.Rendering.OpenGL.GL.PeekPoke
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.TextureTarget
 import Graphics.Rendering.OpenGL.GL.VertexSpec
 import Graphics.Rendering.OpenGL.Raw
@@ -65,10 +65,10 @@ marshalTexParameter x = case x of
    TextureBaseLevel -> gl_TEXTURE_BASE_LEVEL
    TextureMaxLevel -> gl_TEXTURE_MAX_LEVEL
    TexturePriority -> gl_TEXTURE_PRIORITY
-   TextureMaxAnisotropy -> gl_TEXTURE_MAX_ANISOTROPY
-   TextureCompare -> 0x819A
-   TextureCompareOperator -> 0x819B
-   TextureCompareFailValue -> gl_TEXTURE_COMPARE_FAIL_VALUE
+   TextureMaxAnisotropy -> gl_TEXTURE_MAX_ANISOTROPY_EXT
+   TextureCompare -> gl_TEXTURE_COMPARE_SGIX
+   TextureCompareOperator -> gl_TEXTURE_COMPARE_OPERATOR_SGIX
+   TextureCompareFailValue -> gl_TEXTURE_COMPARE_FAIL_VALUE_ARB
    GenerateMipmap -> gl_GENERATE_MIPMAP
    TextureCompareMode -> gl_TEXTURE_COMPARE_MODE
    TextureCompareFunc -> gl_TEXTURE_COMPARE_FUNC

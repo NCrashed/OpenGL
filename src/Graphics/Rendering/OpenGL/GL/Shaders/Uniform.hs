@@ -24,6 +24,7 @@ module Graphics.Rendering.OpenGL.GL.Shaders.Uniform (
 ) where
 
 import Data.Maybe
+import Data.StateVar
 import Foreign.Marshal.Alloc
 import Foreign.Ptr
 import Foreign.Storable
@@ -31,7 +32,6 @@ import Graphics.Rendering.OpenGL.GL.ByteString
 import Graphics.Rendering.OpenGL.GL.Shaders.Program
 import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Graphics.Rendering.OpenGL.GL.Shaders.Variables
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Tensor
 import Graphics.Rendering.OpenGL.GL.VertexSpec
 import Graphics.Rendering.OpenGL.Raw
@@ -139,11 +139,10 @@ makeUniformVar :: (UniformComponent a, Storable (b a))
                => (UniformLocation -> b a -> IO ())
                -> UniformLocation -> StateVar (b a)
 makeUniformVar setter location = makeStateVar getter (setter location)
-   where getter = do
-            program <- fmap fromJust $ get currentProgram
-            allocaBytes maxUniformBufferSize  $ \buf -> do
-            getUniform program location buf
-            peek buf
+   where getter = do program <- fmap fromJust $ get currentProgram
+                     allocaBytes maxUniformBufferSize $ \buf -> do
+                        getUniform program location buf
+                        peek buf
 
 instance UniformComponent a => Uniform (Vertex2 a) where
    uniform = makeUniformVar $ \location (Vertex2 x y) -> uniform2 location x y
@@ -199,12 +198,11 @@ instance UniformComponent a => Uniform (Index1 a) where
 instance Uniform TextureUnit where
     uniform loc@(UniformLocation ul)  = makeStateVar getter setter
         where setter (TextureUnit tu) = uniform1 loc (fromIntegral tu :: GLint)
-              getter = do
-                 program <- fmap fromJust $ get currentProgram
-                 allocaBytes (sizeOf (undefined :: GLint))  $ \buf -> do
-                 glGetUniformiv (programID program) ul buf
-                 tuID <- peek buf
-                 return . TextureUnit $ fromIntegral tuID
+              getter = do program <- fmap fromJust $ get currentProgram
+                          allocaBytes (sizeOf (undefined :: GLint))  $ \buf -> do
+                             glGetUniformiv (programID program) ul buf
+                             tuID <- peek buf
+                             return . TextureUnit $ fromIntegral tuID
     uniformv location count = uniform1v location count . (castPtr :: Ptr TextureUnit -> Ptr GLint)
 
 --------------------------------------------------------------------------------

@@ -15,12 +15,12 @@ module Graphics.Rendering.OpenGL.GL.PixellikeObject (
   PixellikeObjectTarget(pixellikeObjTarParam),
 ) where
 
-import Foreign.Marshal.Alloc
+import Data.StateVar
+import Foreign.Marshal.Utils
 import Graphics.Rendering.OpenGL.GL.FramebufferObjects.FramebufferObjectAttachment
 import Graphics.Rendering.OpenGL.GL.FramebufferObjects.FramebufferTarget
 import Graphics.Rendering.OpenGL.GL.FramebufferObjects.RenderbufferTarget
 import Graphics.Rendering.OpenGL.GL.PeekPoke
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.Specification
 import Graphics.Rendering.OpenGL.GL.Texturing.TextureTarget
 import Graphics.Rendering.OpenGL.Raw
@@ -77,6 +77,6 @@ instance QueryableTextureTarget t => PixellikeObjectTarget (TextureTargetFull t)
       DepthSize -> gl_TEXTURE_DEPTH_SIZE
       StencilSize -> gl_TEXTURE_STENCIL_SIZE
    pixObjTarQueryFunc (TextureTargetFull t level) p =
-      alloca $ \buf -> do
+      with 0 $ \buf -> do
       glGetTexLevelParameteriv (marshalQueryableTextureTarget t) level p buf
       peek1 id buf

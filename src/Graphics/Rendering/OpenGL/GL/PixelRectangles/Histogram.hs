@@ -18,14 +18,14 @@ module Graphics.Rendering.OpenGL.GL.PixelRectangles.Histogram (
    histogramRGBASizes, histogramLuminanceSize
 ) where
 
-import Foreign.Marshal.Alloc
+import Data.StateVar
+import Foreign.Marshal.Utils
 import Graphics.Rendering.OpenGL.GL.Capability
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.PixelData
 import Graphics.Rendering.OpenGL.GL.PixelRectangles.ColorTable
 import Graphics.Rendering.OpenGL.GL.PixelRectangles.Reset
 import Graphics.Rendering.OpenGL.GL.PixelRectangles.Sink
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.PixelInternalFormat
 import Graphics.Rendering.OpenGL.GL.VertexSpec
 import Graphics.Rendering.OpenGL.Raw
@@ -63,7 +63,7 @@ getHistogram' proxy = do
 getHistogramParameteri ::
    (GLint -> a) -> Proxy -> GetHistogramParameterPName -> IO a
 getHistogramParameteri f proxy p =
-   alloca $ \buf -> do
+   with 0 $ \buf -> do
       glGetHistogramParameteriv
          (marshalHistogramTarget (proxyToHistogramTarget proxy))
          (marshalGetHistogramParameterPName p)

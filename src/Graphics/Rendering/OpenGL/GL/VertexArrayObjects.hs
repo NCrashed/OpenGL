@@ -15,12 +15,13 @@ module Graphics.Rendering.OpenGL.GL.VertexArrayObjects (
    bindVertexArrayObject
 ) where
 
-import Foreign.Marshal.Array
-
+import Control.Monad.IO.Class
+import Data.ObjectName
+import Data.StateVar
+import Foreign.Marshal.Array ( allocaArray, peekArray, withArrayLen )
+import Graphics.Rendering.OpenGL.GL.DebugOutput
 import Graphics.Rendering.OpenGL.GL.GLboolean
-import Graphics.Rendering.OpenGL.GL.ObjectName
 import Graphics.Rendering.OpenGL.GL.QueryUtils
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.Raw
 
 -----------------------------------------------------------------------------
@@ -29,16 +30,20 @@ newtype VertexArrayObject = VertexArrayObject { vertexArrayID :: GLuint }
    deriving( Eq, Ord, Show )
 
 instance ObjectName VertexArrayObject where
-   isObjectName =  fmap unmarshalGLboolean . glIsVertexArray . vertexArrayID
+   isObjectName =
+     liftIO . fmap unmarshalGLboolean . glIsVertexArray . vertexArrayID
 
    deleteObjectNames bufferObjects =
-      withArrayLen (map vertexArrayID bufferObjects) $
+      liftIO . withArrayLen (map vertexArrayID bufferObjects) $
          glDeleteVertexArrays . fromIntegral
 
 instance GeneratableObjectName VertexArrayObject where
-   genObjectNames n = allocaArray n $ \buf -> do
+   genObjectNames n = liftIO . allocaArray n $ \buf -> do
       glGenVertexArrays (fromIntegral n) buf
       fmap (map VertexArrayObject) $ peekArray n buf
+
+instance CanBeLabeled VertexArrayObject where
+   objectLabel = objectNameLabel gl_VERTEX_ARRAY . vertexArrayID
 
 bindVertexArrayObject :: StateVar (Maybe VertexArrayObject)
 bindVertexArrayObject = makeStateVar getVAO bindVAO

@@ -21,11 +21,11 @@ module Graphics.Rendering.OpenGL.GL.Texturing.Queries (
 ) where
 
 import Control.Monad
-import Foreign.Marshal.Alloc
+import Data.StateVar
+import Foreign.Marshal.Utils
 import Graphics.Rendering.OpenGL.GL.GLboolean
 import Graphics.Rendering.OpenGL.GL.PeekPoke
 import Graphics.Rendering.OpenGL.GL.PixelRectangles
-import Graphics.Rendering.OpenGL.GL.StateVar
 import Graphics.Rendering.OpenGL.GL.Texturing.PixelInternalFormat
 import Graphics.Rendering.OpenGL.GL.Texturing.Specification
 import Graphics.Rendering.OpenGL.GL.Texturing.TextureTarget
@@ -65,7 +65,7 @@ marshalTexLevelParameter x = case x of
    TextureAlphaSize -> gl_TEXTURE_ALPHA_SIZE
    TextureIntensitySize -> gl_TEXTURE_INTENSITY_SIZE
    TextureLuminanceSize -> gl_TEXTURE_LUMINANCE_SIZE
-   TextureIndexSize -> gl_TEXTURE_INDEX_SIZE
+   TextureIndexSize -> gl_TEXTURE_INDEX_SIZE_EXT
    DepthBits -> gl_DEPTH_BITS
    TextureCompressedImageSize -> gl_TEXTURE_COMPRESSED_IMAGE_SIZE
    TextureCompressed -> gl_TEXTURE_COMPRESSED
@@ -165,6 +165,6 @@ getTexLevelParameteriNoProxy f = getTexLevelParameteri f . marshalQueryableTextu
 
 getTexLevelParameteri :: (GLint -> a) -> GLenum -> Level -> TexLevelParameter -> IO a
 getTexLevelParameteri f t level p =
-   alloca $ \buf -> do
+   with 0 $ \buf -> do
       glGetTexLevelParameteriv t level (marshalTexLevelParameter p) buf
       peek1 f buf
