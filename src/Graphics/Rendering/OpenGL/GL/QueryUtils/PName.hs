@@ -479,6 +479,7 @@ data PName1I
     | GetIndexWritemask     -- ^ int
     | GetDepthWritemask     -- ^ bool
     | GetStencilWritemask   -- ^ bool
+    | GetStencilBackWritemask   -- ^ bool
     | GetStencilClearValue  -- ^ int
     -- Program
     | GetCurrentProgram     -- ^ int
@@ -495,11 +496,17 @@ data PName1I
     | GetSampleCoverageInvert       -- ^ bool
     | GetAlphaTestFunc              -- ^ enum
     | GetStencilFunc                -- ^ enum
+    | GetStencilBackFunc            -- ^ enum
     | GetStencilValueMask           -- ^ int
+    | GetStencilBackValueMask       -- ^ int
     | GetStencilRef                 -- ^ int
+    | GetStencilBackRef             -- ^ int
     | GetStencilFail                -- ^ enum
+    | GetStencilBackFail            -- ^ enum
     | GetStencilPassDepthFail       -- ^ enum
+    | GetStencilBackPassDepthFail   -- ^ enum
     | GetStencilPassDepthPass       -- ^ enum
+    | GetStencilBackPassDepthPass   -- ^ enum
     | GetActiveStencilFace          -- ^ enum
     | GetLogicOpMode                -- ^ enum
     | GetBlendDst                   -- ^ enum
@@ -563,6 +570,8 @@ data PName1I
     | GetDebugNextLoggedMessageLength -- ^ int
     | GetMaxDebugGroupStackDepth      -- ^ int
     | GetMaxLabelLength               -- ^ int
+    -- Extensions
+    | GetNumExtensions     -- ^ uint
 
 instance GetPName1I PName1I where
 
@@ -749,6 +758,7 @@ instance GetPName PName1I where
         GetIndexWritemask -> Just gl_INDEX_WRITEMASK
         GetDepthWritemask -> Just gl_DEPTH_WRITEMASK
         GetStencilWritemask -> Just gl_STENCIL_WRITEMASK
+        GetStencilBackWritemask -> Just gl_STENCIL_BACK_WRITEMASK
         GetStencilClearValue -> Just gl_STENCIL_CLEAR_VALUE
         -- Program
         GetCurrentProgram -> Just gl_CURRENT_PROGRAM
@@ -766,11 +776,17 @@ instance GetPName PName1I where
         GetSampleCoverageInvert -> Just gl_SAMPLE_COVERAGE_INVERT
         GetAlphaTestFunc -> Just gl_ALPHA_TEST_FUNC
         GetStencilFunc -> Just gl_STENCIL_FUNC
+        GetStencilBackFunc -> Just gl_STENCIL_BACK_FUNC
         GetStencilValueMask -> Just gl_STENCIL_VALUE_MASK
+        GetStencilBackValueMask -> Just gl_STENCIL_BACK_VALUE_MASK
         GetStencilRef -> Just gl_STENCIL_REF
+        GetStencilBackRef -> Just gl_STENCIL_BACK_REF
         GetStencilFail -> Just gl_STENCIL_FAIL
+        GetStencilBackFail -> Just gl_STENCIL_BACK_FAIL
         GetStencilPassDepthFail -> Just gl_STENCIL_PASS_DEPTH_FAIL
+        GetStencilBackPassDepthFail -> Just gl_STENCIL_BACK_PASS_DEPTH_FAIL
         GetStencilPassDepthPass -> Just gl_STENCIL_PASS_DEPTH_PASS
+        GetStencilBackPassDepthPass -> Just gl_STENCIL_BACK_PASS_DEPTH_PASS
         GetActiveStencilFace -> Just gl_ACTIVE_STENCIL_FACE_EXT
         GetLogicOpMode -> Just gl_LOGIC_OP_MODE
         GetBlendDst -> Just gl_BLEND_DST
@@ -834,6 +850,7 @@ instance GetPName PName1I where
         GetDebugNextLoggedMessageLength -> Just gl_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH
         GetMaxDebugGroupStackDepth -> Just gl_MAX_DEBUG_GROUP_STACK_DEPTH
         GetMaxLabelLength -> Just gl_MAX_LABEL_LENGTH
+        GetNumExtensions -> Just gl_NUM_EXTENSIONS
 
 -- 0x8825 through 0x8834 are reserved for draw buffers
 
@@ -1046,6 +1063,8 @@ data PName2F
     | GetSmoothLineWidthRange   -- ^ float
     -- PerFragment
     | GetDepthBounds            -- ^ clampd
+    -- Tessellation
+    | GetPatchDefaultInnerLevel -- ^ float
 
 instance GetPName2F PName2F where
 
@@ -1063,6 +1082,8 @@ instance GetPName PName2F where
         GetSmoothLineWidthRange -> Just gl_SMOOTH_LINE_WIDTH_RANGE
         -- PerFragment
         GetDepthBounds -> Just gl_DEPTH_BOUNDS_EXT
+        -- Tessellation
+        GetPatchDefaultInnerLevel -> Just gl_PATCH_DEFAULT_INNER_LEVEL
 
 -----------------------------------------------------------------------------
 
@@ -1134,7 +1155,10 @@ data PName4F
     | GetCurrentRasterSecondaryColor    -- ^ float
     | GetCurrentRasterTextureCoords     -- ^ float
     | GetCurrentRasterPosition          -- ^ float
+    -- PerFragment
     | GetBlendColor                     -- ^ clampf
+    -- Tessellation
+    | GetPatchDefaultOuterLevel         -- ^ float
 
 instance GetPName4F PName4F where
 
@@ -1152,15 +1176,15 @@ instance GetPName PName4F where
         -- Framebuffer
         GetColorClearValue -> Just gl_COLOR_CLEAR_VALUE
         GetAccumClearValue -> Just gl_ACCUM_CLEAR_VALUE
-        -- Rasterpos
+        -- RasterPos
         GetCurrentRasterColor -> Just gl_CURRENT_RASTER_COLOR
         GetCurrentRasterSecondaryColor -> Just gl_CURRENT_RASTER_SECONDARY_COLOR
         GetCurrentRasterTextureCoords -> Just gl_CURRENT_RASTER_TEXTURE_COORDS
         GetCurrentRasterPosition -> Just gl_CURRENT_RASTER_POSITION
         -- PerFragment
         GetBlendColor -> Just gl_BLEND_COLOR
-
-
+        -- Tessellation
+        GetPatchDefaultOuterLevel -> Just gl_PATCH_DEFAULT_OUTER_LEVEL
 
 -- 0x3000 through 0x3FFF are reserved for clip planes
 clipPlaneIndexToEnum :: GLsizei -> Maybe GLenum
